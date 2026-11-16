@@ -1,0 +1,605 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LMS Contexto Policial - API Documentation",
+    "description": "Especificação interativa e documentação das APIs REST internas da plataforma LMS Contexto Policial / Adrenalina Policial.\n\nPermite inspecionar parâmetros, modelos de dados e realizar testes interativos das rotas operacionais do aluno.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Equipe de Engenharia LMS",
+      "url": "https://contextopolicial.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost/bm.contextopolicial.com",
+      "description": "Ambiente Local de Desenvolvimento (XAMPP)"
+    },
+    {
+      "url": "https://bm.contextopolicial.com",
+      "description": "Ambiente de Produção (BM Contexto Policial)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Simulados e Quizzes",
+      "description": "Persistência e processamento de gabaritos e pontuações de simulados e quizzes rápidos."
+    },
+    {
+      "name": "Progresso de Estudos",
+      "description": "Sincronização de aulas concluídas, itens do cronograma e configurações personalizadas do organizador."
+    },
+    {
+      "name": "Anotações e Destaques",
+      "description": "Gerenciamento de grifos de texto e anotações vinculadas aos resumos teóricos."
+    },
+    {
+      "name": "Treinamento Físico (TAF)",
+      "description": "Registro de sessões de treino, índices biométricos e histórico de evolução para o Teste de Aptidão Física."
+    }
+  ],
+  "paths": {
+    "/api/salvar_simulado.php": {
+      "post": {
+        "tags": ["Simulados e Quizzes"],
+        "summary": "Salva o resultado de um simulado completo",
+        "description": "Recebe as respostas do aluno, calcula o número de acertos, nota percentual e tempo decorrido, salvando na tabela `resultados_simulados`.",
+        "operationId": "salvarSimulado",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarSimuladoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulado persistido com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalvarSimuladoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão não autorizada ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno ao processar o simulado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/salvar_quiz.php": {
+      "post": {
+        "tags": ["Simulados e Quizzes"],
+        "summary": "Salva o resultado de um quiz rápido ou flash-questionário",
+        "description": "Grava as estatísticas de acerto e tempo de execução na tabela `resultados_quizzes`.",
+        "operationId": "salvarQuiz",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalvarSimuladoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quiz registrado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalvarSimuladoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão não autorizada ou expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno ao salvar quiz",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api_progresso.php": {
+      "post": {
+        "tags": ["Progresso de Estudos"],
+        "summary": "Gerencia o progresso pedagógico e organizador do aluno",
+        "description": "Endpoint polimórfico orientado pela propriedade `acao`. Permite marcar/desmarcar aulas, sincronizar em lote ou salvar configurações do organizador.",
+        "operationId": "gerenciarProgresso",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operação de progresso executada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressoResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário não autenticado na sessão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno ao persistir progresso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/api_anotacoes.php": {
+      "get": {
+        "tags": ["Anotações e Destaques"],
+        "summary": "Carrega os grifos e notas de um resumo específico",
+        "description": "Retorna todos os destaques de texto (highlights) e notas vinculadas ao resumo teórico indicado.",
+        "operationId": "carregarAnotacoes",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "parameters": [
+          {
+            "name": "acao",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["carregar"]
+            },
+            "example": "carregar"
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "required": true,
+            "description": "Identificador do resumo ou artigo",
+            "schema": {
+              "type": "string"
+            },
+            "example": "direito-penal-aula-01"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de destaques e anotações",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnotacoesCarregarResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Anotações e Destaques"],
+        "summary": "Salva ou exclui anotações e destaques de texto",
+        "description": "Permite registrar um novo grifo (`acao: salvar`) ou remover uma anotação existente (`acao: excluir`).",
+        "operationId": "gerenciarAnotacoes",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnotacoesPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operação de anotação concluída",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnotacoesPostResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão expirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/api_taf.php": {
+      "post": {
+        "tags": ["Treinamento Físico (TAF)"],
+        "summary": "Registra ou remove treinos do simulador TAF",
+        "description": "Permite salvar uma bateria de exercícios (barra fixa, abdominal, corrida) ou excluir as medições de uma data específica.",
+        "operationId": "gerenciarTaf",
+        "security": [
+          { "cookieAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TafPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dados do treino físico salvos ou removidos com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TafPostResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Acesso não autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "PHPSESSID",
+        "description": "Sessão PHP autenticada do aluno via cookie de navegador"
+      }
+    },
+    "schemas": {
+      "SalvarSimuladoRequest": {
+        "type": "object",
+        "required": ["simulado_ref", "acertos", "total_questoes"],
+        "properties": {
+          "simulado_ref": {
+            "type": "string",
+            "description": "Referência ou slug do simulado",
+            "example": "simulado-pm-rs-01"
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Título descritivo da prova",
+            "example": "Simulado Geral PM-RS Brigada Militar"
+          },
+          "acertos": {
+            "type": "integer",
+            "description": "Quantidade de questões acertadas",
+            "example": 42
+          },
+          "total_questoes": {
+            "type": "integer",
+            "description": "Quantidade total de questões do simulado",
+            "example": 50
+          },
+          "tempo_decorrido": {
+            "type": "integer",
+            "description": "Duração total em segundos",
+            "example": 3600
+          },
+          "detalhes": {
+            "type": "object",
+            "description": "Mapa com detalhes das respostas por questão",
+            "additionalProperties": true
+          }
+        }
+      },
+      "SalvarSimuladoResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "id": {
+            "type": "integer",
+            "description": "ID gerado do registro",
+            "example": 89
+          },
+          "message": {
+            "type": "string",
+            "example": "Simulado salvo com sucesso!"
+          }
+        }
+      },
+      "ProgressoRequest": {
+        "type": "object",
+        "required": ["acao"],
+        "properties": {
+          "acao": {
+            "type": "string",
+            "enum": ["marcar", "desmarcar", "atualizar", "sincronizar", "salvar_config_org", "listar"],
+            "example": "marcar"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Referência do conteúdo ou aula",
+            "example": "aula-dir-const-01"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo do conteúdo (conteudo, Organizador, aula, etc.)",
+            "example": "aula"
+          },
+          "status": {
+            "type": "boolean",
+            "description": "Flag de conclusão (usado com acao=atualizar)",
+            "example": true
+          },
+          "lista": {
+            "type": "array",
+            "description": "Lista de itens a sincronizar em lote (usado com acao=sincronizar)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": { "type": "string" },
+                "tipo": { "type": "string" }
+              }
+            }
+          },
+          "config": {
+            "type": "object",
+            "description": "Configurações personalizadas do organizador",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ProgressoResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "sucesso"
+          },
+          "msg": {
+            "type": "string",
+            "example": "Marcado como concluído"
+          },
+          "concluidas": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["aula-dir-const-01", "aula-dir-penal-02"]
+          }
+        }
+      },
+      "AnotacoesCarregarResponse": {
+        "type": "object",
+        "properties": {
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "db_id": { "type": "integer", "example": 14 },
+                "text": { "type": "string", "example": "Princípio da Legalidade" },
+                "color": { "type": "string", "example": "#ffeb3b" }
+              }
+            }
+          },
+          "annotations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "db_id": { "type": "integer", "example": 15 },
+                "nota": { "type": "string", "example": "Revisar jurisprudência do STF sobre isso." }
+              }
+            }
+          }
+        }
+      },
+      "AnotacoesPostRequest": {
+        "type": "object",
+        "required": ["acao"],
+        "properties": {
+          "acao": {
+            "type": "string",
+            "enum": ["salvar", "excluir"],
+            "example": "salvar"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Slug do resumo",
+            "example": "direito-penal-aula-01"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["highlight", "annotation"],
+            "example": "highlight"
+          },
+          "dados": {
+            "type": "object",
+            "description": "Carga útil com o grifo ou texto da anotação",
+            "additionalProperties": true
+          },
+          "id": {
+            "type": "integer",
+            "description": "ID da anotação a ser excluída (usado com acao=excluir)",
+            "example": 15
+          }
+        }
+      },
+      "AnotacoesPostResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "sucesso"
+          },
+          "id": {
+            "type": "integer",
+            "example": 45
+          }
+        }
+      },
+      "TafPostRequest": {
+        "type": "object",
+        "required": ["acao"],
+        "properties": {
+          "acao": {
+            "type": "string",
+            "enum": ["salvar", "excluir_dia"],
+            "example": "salvar"
+          },
+          "dados": {
+            "type": "array",
+            "description": "Lista de exercícios realizados no dia",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "example": "barra_fixa" },
+                "data": { "type": "string", "format": "date", "example": "2026-11-04" },
+                "sexo": { "type": "string", "enum": ["M", "F"], "example": "M" },
+                "resultadoNumerico": { "type": "number", "example": 8 }
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "format": "date",
+            "description": "Data a ser excluída (com acao=excluir_dia)",
+            "example": "2026-11-04"
+          },
+          "sexo": {
+            "type": "string",
+            "enum": ["M", "F"],
+            "example": "M"
+          }
+        }
+      },
+      "TafPostResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "sucesso"
+          },
+          "inseridos": {
+            "type": "integer",
+            "example": 3
+          },
+          "ignorados": {
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "erro": {
+            "type": "string",
+            "example": "Mensagem detalhada do erro"
+          },
+          "message": {
+            "type": "string",
+            "example": "Sessão expirou ou credenciais inválidas"
+          }
+        }
+      }
+    }
+  }
+}

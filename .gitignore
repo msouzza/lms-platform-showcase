@@ -1,0 +1,39 @@
+# Dependências e Cache de Testes
+/vendor/
+/.phpunit.cache/
+.phpunit.result.cache
+composer.lock
+
+# Variáveis de Ambiente e Credenciais Locais
+.env
+.env.*
+!.env.example
+
+# Diretórios de Sessão Temporária
+/sessions_tmp/
+sess_*
+
+# Arquivos de Backup e Rascunho (Não devem ir para Produção)
+* copy.php
+* copy.html
+* copy.js
+*_old.php
+*.bak
+*.tmp
+*.log
+
+# Arquivos de Debug Local e Legados de Pagamento (Fora do escopo do LMS)
+validar_ambiente.php
+teste-acesso-admin.html
+teste.html
+notificacao_mp.php
+pagamento-final.js
+verifica-pagamento.js
+obrigado.html
+node_modules/
+
+# Arquivos de Sistema Operacional / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,108 @@
+name: CI - LMS Platform Showcase
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+  workflow_dispatch:
+
+env:
+  PHP_VERSION: '8.2'
+  DB_HOST: '127.0.0.1'
+  DB_PORT: '3306'
+  DB_NAME: 'sistema_adrenalina'
+  DB_USER: 'root'
+  DB_PASS: 'root'
+  APP_TEST_URL: 'http://127.0.0.1:8089'
+
+jobs:
+  # ==========================================================================
+  # 1. PHP LINT & FRONTEND UNIT TESTS (VITEST)
+  # ==========================================================================
+  lint-and-frontend:
+    name: "🔍 PHP Lint & Frontend Tests (Vitest)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+
+      - name: Check PHP syntax across all files
+        run: php tests/ci/lint.php
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies & run Vitest suite
+        run: |
+          npm ci || npm install
+          npx vitest run
+
+  # ==========================================================================
+  # 2. BACKEND INTEGRATION, CONTRACT & APPSEC TESTS (PHPUnit + MySQL 8.0)
+  # ==========================================================================
+  automated-tests:
+    name: "🧪 Integration, OpenAPI Contract & AppSec (MySQL 8.0)"
+    runs-on: ubuntu-latest
+    needs: lint-and-frontend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: sistema_adrenalina
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo, pdo_mysql, curl, json, mbstring
+          coverage: none
+
+      - name: Install Composer dependencies (PHPUnit)
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Bootstrap test environment (../libs & ../database)
+        run: php tests/ci/setup_parent_env.php
+
+      - name: Import test SQL schema into MySQL
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot < tests/fixtures/schema.sql
+
+      - name: Start built-in PHP web server
+        run: |
+          php -S 127.0.0.1:8089 -t . tests/ci/router.php > /tmp/php-server.log 2>&1 &
+          sleep 2
+          curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8089/index.php | grep -E "200|302"
+
+      - name: Run Unit Test Suite
+        run: vendor/bin/phpunit --testsuite Unit --colors=always
+
+      - name: Run Regression Test Suite
+        run: vendor/bin/phpunit --testsuite Regression --colors=always
+
+      - name: Run AppSec Baseline Suite
+        run: vendor/bin/phpunit --testsuite SecurityAudit --colors=always
+
+      - name: Run OpenAPI / Swagger Contract Suite
+        run: php tests/run_tests.php contract

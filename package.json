@@ -1,0 +1,34 @@
+{
+  "name": "contexto-policial-webhook",
+  "version": "1.0.0",
+  "description": "Servidor webhook para Mercado Pago - Contexto Policial",
+  "main": "webhook-server.js",
+  "scripts": {
+    "test": "node tests/run_all.js",
+    "test:swagger": "C:\\xampp\\php\\php.exe tests/run_tests.php contract",
+    "test:contract": "C:\\xampp\\php\\php.exe tests/run_tests.php contract",
+    "test:frontend": "vitest run",
+    "test:watch": "vitest",
+    "test:local": "powershell -ExecutionPolicy Bypass -File tests/run_local.ps1",
+    "test:all": "node tests/run_all.js",
+    "test:php": "C:\\xampp\\php\\php.exe tests/run_tests.php all"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "nodemon": "^3.0.1",
+    "vitest": "^5.0.5"
+  },
+  "keywords": [
+    "webhook",
+    "mercado-pago",
+    "contexto-policial"
+  ],
+  "author": "Contexto Policial",
+  "license": "ISC"
+}

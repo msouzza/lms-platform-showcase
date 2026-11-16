@@ -1,0 +1,35 @@
+Options -Indexes
+
+# Bloqueia acesso direto a arquivos de backup, scripts de manutenção e arquivos de debug
+<FilesMatch "(copy\.php|integrar-anotacoes\.js|validar_ambiente\.php|teste-acesso-admin\.html|teste\.html|composer\.(json|lock)|phpunit\.xml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Protege o conteúdo pago: bloqueia acesso HTTP direto aos HTMLs dentro de components/
+    # (O conteúdo continua sendo lido normalmente no servidor pelos wrappers ver_resumo.php, ver_quiz.php, etc.)
+    RewriteRule ^components/.*\.(html|htm)$ - [F,L,NC]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Security Headers (OWASP Best Practices)
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Desativa cache apenas para páginas dinâmicas PHP e HTML (mantendo cache de JS/CSS versionados)
+    <FilesMatch "\.(php|html|htm)$">
+        FileETag None
+        Header unset ETag
+        Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
+    </FilesMatch>
+</IfModule>
